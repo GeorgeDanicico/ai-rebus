@@ -1,0 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@500;700&family=Space+Grotesk:wght@400;500;600&display=swap");
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+  --font-body: "Space Grotesk", "Source Sans 3", "Noto Sans", "Liberation Sans", sans-serif;
+  --font-display: "Fraunces", "Crimson Pro", "Times New Roman", Times, serif;
+  color-scheme: light;
+}
+
+body {
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: #0f172a;
+  background:
+    radial-gradient(900px 500px at 10% -10%, rgba(255, 237, 213, 0.7), transparent 60%),
+    radial-gradient(700px 420px at 90% 0%, rgba(186, 230, 253, 0.6), transparent 55%),
+    #f8fafc;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
