@@ -68,11 +68,26 @@ export const useAuth = () => {
     return session
   }
 
+  const provisionProfile = async () => {
+    const session = await getSession()
+    if (!session?.access_token) {
+      throw new Error('No active session found.')
+    }
+
+    await $fetch('/api/v1/auth/provision', {
+      method: 'POST',
+      body: {
+        accessToken: session.access_token,
+      },
+    })
+  }
+
   return {
     user,
     getSession,
     exchangeCodeForSession,
     completeOAuthSignIn,
+    provisionProfile,
     signInWithGoogle,
     signOut,
   }

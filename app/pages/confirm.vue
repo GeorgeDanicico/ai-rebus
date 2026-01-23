@@ -17,10 +17,22 @@
 </template>
 
 <script setup lang="ts">
-const { user } = useAuth();
+const { user, provisionProfile } = useAuth()
+const isProvisioning = ref(false)
 
 watchEffect(() => {
-  if (user.value) navigateTo('/rebus')
+  if (!user.value || isProvisioning.value) return
+
+  isProvisioning.value = true
+  void (async () => {
+    try {
+      await provisionProfile()
+    } catch (error) {
+      console.error('Profile provisioning failed', error)
+    } finally {
+      await navigateTo('/rebus')
+    }
+  })()
 })
 </script>
 
