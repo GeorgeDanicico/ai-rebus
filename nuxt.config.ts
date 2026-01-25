@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxtjs/supabase'],
+  modules: ['@nuxt/eslint', '@nuxt/ui', '@nuxtjs/supabase', '@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
   colorMode: {
     preference: 'light',
@@ -17,5 +17,6 @@ export default defineNuxtConfig({
   },
   supabase: {
     redirect: false,
-  }
+  },
+  pinia: {}
 })

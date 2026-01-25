@@ -1,18 +1,24 @@
+import OpenAI from "openai";
+import { zodTextFormat } from "openai/helpers/zod";
+import { z } from "zod";
+
 type RebusResponse = {
   words: string[]
-  answer: string
-  hint?: string
+  words_questions: string[]
 }
 
 const SYSTEM_PROMPT = `You generate rebus puzzles for a word game.
-Return a short list of concrete words (3-5) that can be turned into a visual rebus.
-Each word should be a single English word, no punctuation.
-Also return the final answer phrase the rebus represents, plus a short hint.
+Create a short list of concrete words (5-7) that can be turned into a visual rebus, based on a specific theme.
+Each word should be a single Romanian word, no punctuation. I want you to also create questions in romanian for each word that the user can read 
+to create 
 Keep it family-friendly and easy.`
 
 export default defineEventHandler(async (event) => {
-  const runtimeConfig = useRuntimeConfig()
-  const openaiApiKey = runtimeConfig.openaiApiKey as string | undefined
+  const runtimeConfig = useRuntimeConfig();
+  const openaiApiKey = runtimeConfig.openaiApiKey as string | undefined;
+
+  // console.log(runtimeConfig);
+  // console.log(openaiApiKey);
 
   if (!openaiApiKey) {
     throw createError({
@@ -20,78 +26,38 @@ export default defineEventHandler(async (event) => {
       statusMessage: 'OpenAI API key is not configured.',
     })
   }
+ 
+  const openai = new OpenAI({ apiKey: openaiApiKey });
 
   const body = await readBody<{ theme?: string }>(event).catch(() => ({}))
-  // const theme = body?.theme?.trim()
 
-  // const userPrompt = theme
-  //   ? `Generate one rebus word list themed around: ${theme}.`
-  //   : 'Generate one rebus word list.'
+const RebusResponseSchema = z.object({
+  words: z.array(z.string()),
+  words_questions: z.array(z.string()),
+})
 
-  const response = await $fetch<{
-    output?: Array<{
-      content?: Array<{ type: string; text?: string }>
-    }>
-  }>('https://api.openai.com/v1/responses', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${openaiApiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: {
-      model: 'gpt-4o-mini',
-      input: [
-        {
-          role: 'system',
-          content: [{ type: 'text', text: SYSTEM_PROMPT }],
-        },
-        {
-          role: 'user',
-          content: [{ type: 'text', text: 'Generate one user prompt' }],
-        },
-      ],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'rebus_words',
-          strict: true,
-          schema: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              words: {
-                type: 'array',
-                items: { type: 'string' },
-                minItems: 3,
-                maxItems: 5,
-              },
-              answer: { type: 'string' },
-              hint: { type: 'string' },
-            },
-            required: ['words', 'answer'],
-          },
-        },
-      },
-      temperature: 0.2,
-      max_output_tokens: 240,
+  const response = await openai.responses.create({
+    model: 'gpt-4o',
+    instructions: SYSTEM_PROMPT,
+    input: 'Generate one rebus with the theme: science fiction books.',
+    temperature: 0.1,
+    text: {
+      format: zodTextFormat(RebusResponseSchema, 'rebus_response')
     },
   })
 
-  const outputText =
-    response.output
-      ?.flatMap((item) => item.content ?? [])
-      .find((content) => content.type === 'output_text')?.text ?? null
+  console.log("AI Response: \n" + response.output_text);
 
-  if (!outputText) {
+  if (!response || response.output_text) {
     throw createError({
       statusCode: 500,
       statusMessage: 'OpenAI response was empty.',
-    })
+    });
   }
 
-  let parsed: RebusResponse
+  let parsed: RebusResponse = { words: [], words_questions: []};
   try {
-    parsed = JSON.parse(outputText) as RebusResponse
+
   } catch (error) {
     throw createError({
       statusCode: 500,
@@ -99,5 +65,5 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return parsed
+  return parsed;
 })

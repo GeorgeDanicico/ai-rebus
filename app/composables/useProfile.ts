@@ -1,13 +1,11 @@
-import type { Database, Tables } from '~/types/database.types'
+import type { Tables } from '~/types/database.types'
 
-//TODO move the profile fetching logic to the 
 export const useProfile = () => {
-  const supabase = useSupabaseClient<Database>()
   const user = useSupabaseUser()
 
-  const profile = ref<Tables<'profiles'> | null>(null)
-  const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const profile = useState<Tables<'profiles'> | null>('profile', () => null)
+  const isLoading = useState('profile-loading', () => false)
+  const error = useState<string | null>('profile-error', () => null)
 
   const fetchProfile = async () => {
     if (!user.value) {
@@ -18,27 +16,28 @@ export const useProfile = () => {
     isLoading.value = true
     error.value = null
 
-    const { data, error: queryError } = await supabase
-      .from('profiles')
-      .select('id, first_name, last_name, tokens')
-      .eq('id', user.value.sub)
-      .maybeSingle()
-
-    if (queryError) {
-      error.value = queryError.message
-      profile.value = null
-      isLoading.value = false
-      return null
-    }
+    const data = await $fetch<Tables<'profiles'> | null>('/api/v1/profile')
 
     profile.value = data
     isLoading.value = false
     return data
   }
 
+  const fetchWithErrorHandling = async () => {
+    try {
+      return await fetchProfile()
+    } catch (fetchError) {
+      error.value =
+        fetchError instanceof Error ? fetchError.message : 'Failed to load profile.'
+      profile.value = null
+      isLoading.value = false
+      return null
+    }
+  }
+
   watchEffect(() => {
     if (user.value) {
-      void fetchProfile()
+      void fetchWithErrorHandling()
     } else {
       profile.value = null
     }
