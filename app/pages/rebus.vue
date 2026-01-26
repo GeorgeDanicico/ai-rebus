@@ -48,24 +48,13 @@
             </UButton>
           </div>
 
-          <div v-if="generated" class="mt-6 space-y-3">
-            <div class="flex flex-wrap gap-2">
-              <UBadge
-                v-for="word in generated.words"
-                :key="word"
-                color="primary"
-                variant="soft"
-                class="rounded-full"
-              >
-                {{ word }}
-              </UBadge>
-            </div>
-            <p class="text-sm text-slate-500">
-              Answer: <span class="font-medium text-slate-700">{{ generated.answer }}</span>
-            </p>
-            <p v-if="generated.hint" class="text-sm text-slate-400">
-              Hint: {{ generated.hint }}
-            </p>
+          <div v-if="generated" class="mt-6">
+            <RebusGame
+              :words="generated.words"
+              :questions="generated.words_questions"
+              :disabled="isGenerating"
+              @regenerate="handleGenerate"
+            />
           </div>
         </div>
 
@@ -85,6 +74,7 @@ definePageMeta({
 
 const { user, signOut } = useAuth()
 const { profile, isLoading: isProfileLoading } = useProfile()
+const { generated, isGenerating, generateRebus } = useRebus()
 
 const userLabel = computed(() => user.value?.email ?? 'Guest')
 const tokensLabel = computed(() => {
@@ -92,19 +82,8 @@ const tokensLabel = computed(() => {
   return profile.value?.tokens ?? 0
 })
 
-const isGenerating = ref(false)
-const generated = ref<{ words: string[]; answer: string; hint?: string } | null>(null)
-
 const handleGenerate = async () => {
-  if (isGenerating.value) return
-  isGenerating.value = true
-  try {
-    generated.value = await $fetch('/api/v1/rebus/generate', { method: 'POST' })
-  } catch (error) {
-    console.error('Failed to generate rebus', error)
-  } finally {
-    isGenerating.value = false
-  }
+  await generateRebus()
 }
 
 const handleSignOut = async () => {

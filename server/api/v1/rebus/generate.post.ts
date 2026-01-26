@@ -48,14 +48,16 @@ const RebusResponseSchema = z.object({
 
   console.log("AI Response: \n" + response.output_text);
 
-  if (!response || response.output_text) {
+  if (!response || !response.output_text) {
     throw createError({
       statusCode: 500,
       statusMessage: 'OpenAI response was empty.',
     });
   }
 
-  let parsed: RebusResponse = { words: [], words_questions: []};
+    const parsedResponse: RebusResponse = JSON.parse(response.output_text);
+    console.log(parsedResponse);
+
   try {
 
   } catch (error) {
@@ -65,5 +67,5 @@ const RebusResponseSchema = z.object({
     })
   }
 
-  return parsed;
+  return parsedResponse;
 })
