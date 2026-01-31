@@ -14,6 +14,7 @@
     <RebusQuestions v-if="displayQuestions.length" :questions="displayQuestions" />
 
     <RebusCompleteDialog
+      v-if="isDialogOpen"
       v-model:open="isDialogOpen"
       @regenerate="emit('regenerate')"
     />
