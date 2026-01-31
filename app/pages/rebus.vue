@@ -42,10 +42,21 @@
               size="lg"
               class="rounded-full"
               :loading="isGenerating"
+              :disabled="!canGenerate"
               @click="handleGenerate"
             >
               Generate rebus
             </UButton>
+          </div>
+
+          <div v-if="!isProfileLoading && !canGenerate" class="mt-4">
+            <UAlert color="neutral" variant="soft">
+              <template #description>
+                Unfortunately you can't generate a rebus right now. Token resets:
+                <span class="font-semibold text-slate-700">{{ timeRemaining }}</span>
+                <span class="ml-1 text-slate-500">(UTC 00:00)</span>
+              </template>
+            </UAlert>
           </div>
 
           <div v-if="generated" class="mt-6">
@@ -73,17 +84,23 @@ definePageMeta({
 })
 
 const { user, signOut } = useAuth()
-const { profile, isLoading: isProfileLoading } = useProfile()
+const { profile, isLoading: isProfileLoading, fetchProfile } = useProfile()
 const { generated, isGenerating, generateRebus } = useRebus()
+const { timeRemaining } = useUtcResetCountdown()
+
+const tokensRemaining = computed(() => profile.value?.tokens ?? 0)
+const canGenerate = computed(() => tokensRemaining.value > 0)
 
 const userLabel = computed(() => user.value?.email ?? 'Guest')
 const tokensLabel = computed(() => {
   if (isProfileLoading.value) return '...'
-  return profile.value?.tokens ?? 0
+  return tokensRemaining.value
 })
 
 const handleGenerate = async () => {
+  if (!canGenerate.value) return
   await generateRebus()
+  await fetchProfile()
 }
 
 const handleSignOut = async () => {

@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
+import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 
 type RebusResponse = {
   words: string[]
@@ -93,6 +94,14 @@ const RebusResponseSchema = z.object({
 })
 
 export default defineEventHandler(async (event) => {
+  const client = await serverSupabaseClient(event)
+  const loggedUser = await serverSupabaseUser(event)
+  const userId = loggedUser?.sub ?? loggedUser?.id ?? null
+
+  if (!userId) {
+    throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
+  }
+
   const runtimeConfig = useRuntimeConfig();
   const openaiApiKey = runtimeConfig.openaiApiKey as string | undefined;
 
@@ -106,6 +115,21 @@ export default defineEventHandler(async (event) => {
     })
   }
  
+  const { data: profile, error: profileError } = await client
+    .from('profiles')
+    .select('tokens')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (profileError) {
+    throw createError({ statusCode: 500, statusMessage: 'Failed to load profile.' })
+  }
+
+  const availableTokens = profile?.tokens ?? 0
+  if (availableTokens <= 0) {
+    throw createError({ statusCode: 403, statusMessage: 'No tokens remaining.' })
+  }
+
   const openai = new OpenAI({ apiKey: openaiApiKey });
 
   const body = await readBody<{ theme?: string }>(event).catch(() => ({}))
@@ -140,6 +164,22 @@ export default defineEventHandler(async (event) => {
       statusCode: 500,
       statusMessage: 'Failed to parse OpenAI response.',
     })
+  }
+
+  const nextTokens = availableTokens - 1
+  const { data: updatedTokens, error: updateError } = await client
+    .from('profiles')
+    .update({ tokens: nextTokens })
+    .eq('id', userId)
+    .eq('tokens', availableTokens)
+    .select('tokens')
+
+  if (updateError) {
+    throw createError({ statusCode: 500, statusMessage: 'Failed to update tokens.' })
+  }
+
+  if (!updatedTokens || updatedTokens.length === 0) {
+    throw createError({ statusCode: 409, statusMessage: 'Tokens were updated by another request.' })
   }
 
   return parsedResponse;
