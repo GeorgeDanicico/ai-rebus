@@ -1,5 +1,6 @@
 <template>
   <input
+    ref="inputRef"
     class="size-12 rounded-xl border bg-white text-center text-lg font-semibold uppercase text-slate-700 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-slate-300/70 sm:size-14"
     :class="stateClass"
     :value="modelValue"
@@ -10,6 +11,7 @@
     :aria-label="ariaLabel"
     :disabled="disabled"
     @input="handleInput"
+    @keydown="handleKeydown"
   />
 </template>
 
@@ -25,7 +27,11 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void
+  (event: 'advance'): void
+  (event: 'back'): void
 }>()
+
+const inputRef = ref<HTMLInputElement | null>(null)
 
 const stateClass = computed(() => {
   if (props.state === 'correct') {
@@ -37,16 +43,35 @@ const stateClass = computed(() => {
   return 'border-slate-200'
 })
 
-const sanitizeValue = (value: string) => {
+const sanitizeValue = (value: string): string => {
   const trimmed = value.replace(/\s+/g, '')
   if (!trimmed) return ''
   const [first] = Array.from(trimmed)
-  return first.toLocaleUpperCase()
+  return first?.toLocaleUpperCase() || '';
 }
 
 const handleInput = (event: Event) => {
+  if (props.disabled) return
   const target = event.target as HTMLInputElement | null
   if (!target) return
-  emit('update:modelValue', sanitizeValue(target.value))
+  const nextValue = sanitizeValue(target.value)
+  emit('update:modelValue', nextValue)
+  if (nextValue) {
+    emit('advance')
+  }
 }
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if (props.disabled) return
+  // When deleting, clear this box and shift focus back.
+  if (event.key === 'Backspace') {
+    event.preventDefault()
+    emit('update:modelValue', '')
+    emit('back')
+  }
+}
+
+defineExpose({
+  focus: () => inputRef.value?.focus(),
+})
 </script>
