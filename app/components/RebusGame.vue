@@ -1,17 +1,24 @@
 <template>
   <div class="space-y-6">
-    <div class="space-y-3">
+    <div v-if="!finished" class="space-y-3">
       <RebusWordRow
         v-for="(word, wordIndex) in words"
         :key="`${wordIndex}-${word}`"
         :model-value="inputs[wordIndex] ?? []"
         :letter-states="letterStates[wordIndex] ?? []"
-        :disabled="disabled"
+        :disabled="disabled || finished"
         @update:modelValue="(value) => updateWord(wordIndex, value)"
       />
     </div>
 
     <RebusQuestions v-if="displayQuestions.length" :questions="displayQuestions" />
+
+    <div v-if="finished" class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+      <p class="font-semibold text-slate-900">Solved words</p>
+      <ul class="mt-1 list-disc pl-5">
+        <li v-for="(word, index) in words" :key="`${word}-${index}`">{{ word }}</li>
+      </ul>
+    </div>
 
     <RebusCompleteDialog
       v-if="isDialogOpen"
@@ -28,10 +35,12 @@ const props = defineProps<{
   words: string[]
   questions: string[]
   disabled?: boolean
+  finished?: boolean
 }>()
 
 const emit = defineEmits<{
   (event: 'regenerate'): void
+  (event: 'finished'): void
 }>()
 
 const inputs = ref<string[][]>([])
@@ -94,8 +103,10 @@ watch(
 watch(
   isSolved,
   (value, previous) => {
-    if (value && !previous) {
-      isDialogOpen.value = true
+    if (!value || previous) return
+    isDialogOpen.value = true
+    if (!props.finished) {
+      emit('finished')
     }
   }
 )

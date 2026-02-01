@@ -42,7 +42,7 @@ const SYSTEM_PROMPT = `
     <format>
       <list>Output the selected words, one per line.</list>
       <clues>
-        After the word list, generate a numbered simple question or clue in Romanian for each word.
+        After the word list, generate simple question or clue in Romanian for each word.
         Questions must be in Romanian without diacritics, family-friendly and easy.
       </clues>
     </format>

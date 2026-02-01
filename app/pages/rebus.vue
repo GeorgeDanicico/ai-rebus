@@ -64,7 +64,9 @@
               :words="generated.words"
               :questions="generated.words_questions"
               :disabled="isGenerating"
+              :finished="finished"
               @regenerate="handleGenerate"
+              @finished="markFinished"
             />
           </div>
         </div>
@@ -85,7 +87,7 @@ definePageMeta({
 
 const { user, signOut } = useAuth()
 const { profile, isLoading: isProfileLoading, fetchProfile } = useProfile()
-const { generated, isGenerating, generateRebus } = useRebus()
+const { generated, isGenerating, finished, generateRebus, markFinished } = useRebus()
 const { timeRemaining } = useUtcResetCountdown()
 
 const tokensRemaining = computed(() => profile.value?.tokens ?? 0)
