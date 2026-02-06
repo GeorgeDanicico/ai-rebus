@@ -5,14 +5,17 @@ export const useAuth = () => {
   const getRedirectUrl = () => {
     const runtimeConfig = useRuntimeConfig()
     const siteUrl = runtimeConfig.public?.siteUrl as string | undefined
+    console.log(siteUrl);
     // TODO remove NUXT SITE URL.
     if (siteUrl) {
       return `${siteUrl.replace(/\/$/, '')}/confirm`
     }
+    console.log("this");
     if (process.client) {
+      console.log(`${window.location.origin}/confirm`);
       return `${window.location.origin}/confirm`
     }
-
+    console.log("this2");
     return '/confirm'
   }
 
