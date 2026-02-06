@@ -16,6 +16,15 @@
               Tokens: {{ tokensLabel }}
             </UBadge>
             <UButton
+              v-if="isAdmin"
+              color="primary"
+              variant="soft"
+              class="rounded-full"
+              @click="goToAdmin"
+            >
+              Admin dashboard
+            </UButton>
+            <UButton
               color="neutral"
               variant="ghost"
               class="rounded-full"
@@ -78,6 +87,32 @@
       </div>
     </UCard>
   </UContainer>
+
+  <UModal
+    :open="isAccessGrantedOpen"
+    :dismissible="false"
+    @update:open="(value) => (isAccessGrantedOpen = value)"
+    title="Access granted"
+    description=""
+  >
+    <template #body>
+      <div class="space-y-4 p-6">
+        <div class="space-y-2">
+          <p class="text-xs uppercase tracking-[0.3em] text-slate-400">
+            Welcome
+          </p>
+          <p class="text-sm text-slate-500">
+            You&#39;ve been granted access. Enjoy the app!
+          </p>
+        </div>
+        <div class="flex flex-wrap justify-end gap-3">
+          <UButton color="primary" variant="solid" class="rounded-full" @click="dismissAccessGranted">
+            Continue
+          </UButton>
+        </div>
+      </div>
+    </template>
+  </UModal>
 </template>
 
 <script setup lang="ts">
@@ -92,6 +127,10 @@ const { timeRemaining } = useUtcResetCountdown()
 
 const tokensRemaining = computed(() => profile.value?.tokens ?? 0)
 const canGenerate = computed(() => tokensRemaining.value > 0)
+const isAdmin = computed(() => profile.value?.role === 'ADMIN')
+const isAccessGrantedOpen = ref(false)
+const isAcknowledgingAccess = ref(false)
+const hasAcknowledgedAccess = ref(false)
 
 const userLabel = computed(() => user.value?.email ?? 'Guest')
 const tokensLabel = computed(() => {
@@ -109,4 +148,41 @@ const handleSignOut = async () => {
   await signOut()
   await navigateTo('/')
 }
+
+const goToAdmin = async () => {
+  await navigateTo('/admin')
+}
+
+const acknowledgeAccess = async () => {
+  if (isAcknowledgingAccess.value) return
+  isAcknowledgingAccess.value = true
+  try {
+    await $fetch('/api/v1/profile/ack-approval', { method: 'POST' })
+    await fetchProfile()
+  } catch (error) {
+    console.error('Failed to acknowledge access approval', error)
+    hasAcknowledgedAccess.value = false
+  } finally {
+    isAcknowledgingAccess.value = false
+  }
+}
+
+const dismissAccessGranted = () => {
+  isAccessGrantedOpen.value = false
+}
+
+watchEffect(() => {
+  if (isProfileLoading.value) return
+  if (!profile.value?.allowed) return
+  if (profile.value.received_initial_approval_confirmation !== false) return
+
+  if (!isAccessGrantedOpen.value) {
+    isAccessGrantedOpen.value = true
+  }
+
+  if (!hasAcknowledgedAccess.value) {
+    hasAcknowledgedAccess.value = true
+    void acknowledgeAccess()
+  }
+})
 </script>

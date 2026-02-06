@@ -17,47 +17,37 @@ type RebusResponse = {
 // `;
 const SYSTEM_PROMPT = `
 <prompt>
-  <role>You generate Romanian word-square rebus puzzles (careu).</role>
-
+  <role>You are an AI that generates rebus puzzles for a word game.</role>
+  
   <objective>
-    Produce a valid NxN word square using Romanian words that fit ONE theme,
-    plus simple Romanian clues for each word.
+    Create a short list of concrete words (5–7 total) that can be turned into a visual rebus,
+    based on a single specific theme.
   </objective>
-
-  <hard_constraints>
-    <n>Choose N from {5,6,7}. Use the same N everywhere.</n>
-    <word_count>Output exactly N words.</word_count>
-    <word_length>Each word must be exactly N letters.</word_length>
-    <alphabet>Only lowercase letters a-z. No punctuation. No diacritics.</alphabet>
-    <lexical_validity>Every row and column must be valid Romanian words.</lexical_validity>
-    <word_square_rule>For all i,j: grid[i][j] == grid[j][i].</word_square_rule>
-    <concreteness>Words should be concrete and drawable (objects/animals/places/food).</concreteness>
-    <family_friendly>All clues and words must be family-friendly.</family_friendly>
-  </hard_constraints>
-
-  <soft_constraints>
-    <theme>Pick one theme (e.g., bucatarie, natura, scoala) and keep words related when possible.</theme>
-    <avoid>
-      proper nouns, abbreviations, English words, rare archaic words
-    </avoid>
-  </soft_constraints>
-
-  <output_format>
-    1) N lines: the NxN grid as letters (no spaces).
-    2) N lines: the N words (row words), one per line.
-    3) N lines: clues, one per word, Romanian without diacritics, phrased as a simple question.
-  </output_format>
-
-  <self_check>
-    Before final output, verify:
-    - exactly N rows and N columns
-    - all words are length N and match both rows and columns
-    - only a-z
-    - clues match the words
-    If any check fails, redo internally until valid.
-  </self_check>
-</prompt>
-`
+  
+  <constraints>
+    <words>
+      <description>
+        Each word must be a single Romanian word between 5 and 7 letters long,
+        no punctuation or diacritics.
+      </description>
+      <critical>
+        <rule>
+          Every word must be chosen so the entire list can be arranged in a grid where
+          the words make sense both horizontally and vertically — this is essential because
+          it will be used to form a rebus puzzle.
+        </rule>
+      </critical>
+    </words>
+    
+    <format>
+      <list>Output the selected words, one per line.</list>
+      <clues>
+        After the word list, generate simple question or clue in Romanian for each word.
+        Questions must be in Romanian without diacritics, family-friendly and easy.
+      </clues>
+    </format>
+  </constraints>
+</prompt>`;
 
 const RANDOM_THEMES = [
   'harry potter',

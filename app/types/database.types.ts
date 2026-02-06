@@ -62,21 +62,30 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allowed: boolean
           first_name: string | null
           id: string
           last_name: string | null
+          received_initial_approval_confirmation: boolean | null
+          role: Database["public"]["Enums"]["Role"] | null
           tokens: number | null
         }
         Insert: {
+          allowed?: boolean
           first_name?: string | null
           id: string
           last_name?: string | null
+          received_initial_approval_confirmation?: boolean | null
+          role?: Database["public"]["Enums"]["Role"] | null
           tokens?: number | null
         }
         Update: {
+          allowed?: boolean
           first_name?: string | null
           id?: string
           last_name?: string | null
+          received_initial_approval_confirmation?: boolean | null
+          role?: Database["public"]["Enums"]["Role"] | null
           tokens?: number | null
         }
         Relationships: []
@@ -86,10 +95,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_daily_tokens: { Args: never; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      Role: "USER" | "ADMIN"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -219,6 +228,8 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      Role: ["USER", "ADMIN"],
+    },
   },
 } as const

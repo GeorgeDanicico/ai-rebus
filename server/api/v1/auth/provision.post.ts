@@ -24,7 +24,9 @@ export default defineEventHandler(async (event) => {
         id: loggedUser?.sub || '',
         first_name: '',
         last_name: '',
-        tokens: 1
+        tokens: 0,
+        allowed: false,
+        received_initial_approval_confirmation: false
       });
 
       if (error !== null) {

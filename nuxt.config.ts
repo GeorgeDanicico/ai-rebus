@@ -9,7 +9,6 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     openaiApiKey: process.env.OPENAI_API_KEY,
-    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     supabaseUrl: process.env.SUPABASE_URL,
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,

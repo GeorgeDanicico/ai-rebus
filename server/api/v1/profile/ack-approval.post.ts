@@ -9,15 +9,15 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const { data, error } = await client
+  const { error } = await client
     .from('profiles')
-    .select('id, first_name, last_name, tokens, role, allowed, received_initial_approval_confirmation')
+    .update({ received_initial_approval_confirmation: true })
     .eq('id', userId)
-    .maybeSingle()
+    .eq('allowed', true)
 
   if (error) {
-    throw createError({ statusCode: 500, statusMessage: 'Failed to fetch profile.' })
+    throw createError({ statusCode: 500, statusMessage: 'Failed to acknowledge approval.' })
   }
 
-  return data
+  return { ok: true }
 })
