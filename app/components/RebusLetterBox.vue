@@ -23,22 +23,33 @@ const props = defineProps<{
   state: LetterState
   ariaLabel?: string
   disabled?: boolean
+  rowFocused?: boolean
 }>()
 
 const emit = defineEmits<{
   (event: 'update:modelValue', value: string): void
-  (event: 'advance'): void
-  (event: 'back'): void
+  (event: 'advance' | 'back'): void
 }>()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 
 const stateClass = computed(() => {
+  const rowFocusClass = props.rowFocused
+    ? 'ring-1 ring-slate-300/80 shadow-[inset_0_0_0_999px_rgba(148,163,184,0.08)]'
+    : ''
+
   if (props.state === 'correct') {
-    return 'border-emerald-400 bg-emerald-50 text-emerald-700'
+    return ['border-emerald-400 bg-emerald-50 text-emerald-700', rowFocusClass]
+      .filter(Boolean)
+      .join(' ')
   }
   if (props.state === 'incorrect') {
-    return 'border-rose-400 bg-rose-50 text-rose-700'
+    return ['border-rose-400 bg-rose-50 text-rose-700', rowFocusClass]
+      .filter(Boolean)
+      .join(' ')
+  }
+  if (props.rowFocused) {
+    return 'border-slate-300 bg-slate-50 text-slate-700 ring-1 ring-slate-300/80'
   }
   return 'border-slate-200'
 })
@@ -47,7 +58,14 @@ const sanitizeValue = (value: string): string => {
   const trimmed = value.replace(/\s+/g, '')
   if (!trimmed) return ''
   const [first] = Array.from(trimmed)
-  return first?.toLocaleUpperCase() || '';
+  return first?.toLocaleUpperCase() || ''
+}
+
+const commitValue = (value: string) => {
+  emit('update:modelValue', value)
+  if (value) {
+    emit('advance')
+  }
 }
 
 const handleInput = (event: Event) => {
@@ -55,20 +73,27 @@ const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement | null
   if (!target) return
   const nextValue = sanitizeValue(target.value)
-  emit('update:modelValue', nextValue)
-  if (nextValue) {
-    emit('advance')
-  }
+  target.value = nextValue
+  commitValue(nextValue)
 }
 
 const handleKeydown = (event: KeyboardEvent) => {
   if (props.disabled) return
-  // When deleting, clear this box and shift focus back.
+
   if (event.key === 'Backspace') {
     event.preventDefault()
     emit('update:modelValue', '')
     emit('back')
+    return
   }
+
+  if (event.metaKey || event.ctrlKey || event.altKey || event.key.length !== 1) return
+
+  const nextValue = sanitizeValue(event.key)
+  if (!nextValue) return
+
+  event.preventDefault()
+  commitValue(nextValue)
 }
 
 defineExpose({

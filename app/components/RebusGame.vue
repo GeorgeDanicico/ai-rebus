@@ -4,14 +4,22 @@
       <RebusWordRow
         v-for="(word, wordIndex) in words"
         :key="`${wordIndex}-${word}`"
+        :ref="(el) => setWordRowRef(el, wordIndex)"
         :model-value="inputs[wordIndex] ?? []"
         :letter-states="letterStates[wordIndex] ?? []"
+        :is-focused="!(disabled || finished) && activeRowIndex === wordIndex"
         :disabled="disabled || finished"
         @update:modelValue="(value) => updateWord(wordIndex, value)"
+        @focused="() => setActiveRow(wordIndex)"
       />
     </div>
 
-    <RebusQuestions v-if="displayQuestions.length" :questions="displayQuestions" />
+    <RebusQuestions
+      v-if="displayQuestions.length"
+      :questions="displayQuestions"
+      :disabled="disabled || finished"
+      @select="focusWordRow"
+    />
 
     <div v-if="finished" class="rounded-2xl border border-slate-200/70 bg-slate-50 px-4 py-3 text-sm text-slate-700">
       <p class="font-semibold text-slate-900">Solved words</p>
@@ -30,6 +38,9 @@
 
 <script setup lang="ts">
 type LetterState = 'empty' | 'correct' | 'incorrect'
+type WordRowExpose = {
+  focusAt: (index?: number) => void
+}
 
 const props = defineProps<{
   words: string[]
@@ -39,11 +50,12 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'regenerate'): void
-  (event: 'finished'): void
+  (event: 'regenerate' | 'finished'): void
 }>()
 
 const inputs = ref<string[][]>([])
+const wordRowRefs = ref<Array<WordRowExpose | null>>([])
+const activeRowIndex = ref<number | null>(null)
 const isDialogOpen = ref(false)
 
 const splitWord = (word: string) => Array.from(word)
@@ -91,10 +103,31 @@ const updateWord = (wordIndex: number, next: string[]) => {
   inputs.value = updated
 }
 
+const setWordRowRef = (el: WordRowExpose | null, index: number) => {
+  wordRowRefs.value[index] = el
+}
+
+const setActiveRow = (wordIndex: number | null) => {
+  if (wordIndex === null) {
+    activeRowIndex.value = null
+    return
+  }
+  if (wordIndex < 0 || wordIndex >= props.words.length) return
+  activeRowIndex.value = wordIndex
+}
+
+const focusWordRow = (wordIndex: number) => {
+  if (props.disabled || props.finished) return
+  setActiveRow(wordIndex)
+  wordRowRefs.value[wordIndex]?.focusAt()
+}
+
 watch(
   () => props.words,
   () => {
     resetInputs()
+    wordRowRefs.value = []
+    setActiveRow(null)
     isDialogOpen.value = false
   },
   { immediate: true }
