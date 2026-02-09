@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     supabaseUrl: process.env.SUPABASE_URL,
     public: {
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL,
+      maintenanceMode: process.env.NUXT_PUBLIC_MAINTENANCE_MODE
     },
   },
   supabase: {
