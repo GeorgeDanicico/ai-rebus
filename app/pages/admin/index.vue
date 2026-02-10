@@ -40,25 +40,23 @@
           </template>
         </UAlert>
 
-        <ul v-else class="space-y-3">
-          <li
-            v-for="request in requests"
-            :key="request.id"
-            class="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/70 bg-white/70 px-5 py-4"
-          >
-            <div>
-              <p class="text-base font-medium text-slate-900">
-                {{ formatName(request) }}
-              </p>
-              <p class="text-xs text-slate-500">
-                Profile ID: {{ request.id }}
-              </p>
-            </div>
-            <UBadge color="amber" variant="soft" class="rounded-full">
-              Pending
-            </UBadge>
-          </li>
-        </ul>
+        <div v-else class="space-y-3">
+          <UAlert v-if="actionError" color="rose" variant="soft">
+            <template #description>
+              {{ actionError }}
+            </template>
+          </UAlert>
+
+          <ul class="space-y-3">
+            <AdminAccessRequestItem
+              v-for="request in requests"
+              :key="request.id"
+              :request="request"
+              @approved="handleApproved"
+              @error="handleError"
+            />
+          </ul>
+        </div>
       </div>
     </UCard>
   </UContainer>
@@ -81,12 +79,17 @@ const { data, pending, error, refresh } = await useFetch<AccessRequest[]>(
 )
 
 const requests = computed(() => data.value ?? [])
+const actionError = ref<string | null>(null)
 
-const formatName = (request: AccessRequest) => {
-  const first = request.first_name?.trim() ?? ''
-  const last = request.last_name?.trim() ?? ''
-  const full = [first, last].filter(Boolean).join(' ')
-  return full || 'Unnamed user'
+const handleApproved = (requestId: string) => {
+  actionError.value = null
+  if (data.value) {
+    data.value = data.value.filter((request) => request.id !== requestId)
+  }
+}
+
+const handleError = (message: string) => {
+  actionError.value = message
 }
 
 const goBack = async () => {

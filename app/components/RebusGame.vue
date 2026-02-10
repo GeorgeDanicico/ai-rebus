@@ -37,7 +37,9 @@
 </template>
 
 <script setup lang="ts">
-type LetterState = 'empty' | 'correct' | 'incorrect'
+import type { LetterState } from '../types/rebus'
+import { getWordLetterStates, isWordSolved, splitWord } from '../utils/rebus'
+
 type WordRowExpose = {
   focusAt: (index?: number) => void
 }
@@ -58,11 +60,6 @@ const wordRowRefs = ref<Array<WordRowExpose | null>>([])
 const activeRowIndex = ref<number | null>(null)
 const isDialogOpen = ref(false)
 
-const splitWord = (word: string) => Array.from(word)
-
-const normalizeLetter = (value: string) =>
-  value.normalize('NFC').trim().slice(0, 1).toLocaleUpperCase()
-
 const wordLetters = computed(() => props.words.map(splitWord))
 
 const displayQuestions = computed(() => {
@@ -74,22 +71,14 @@ const displayQuestions = computed(() => {
 
 const letterStates = computed<LetterState[][]>(() =>
   wordLetters.value.map((letters, wordIndex) =>
-    letters.map((letter, letterIndex) => {
-      const input = inputs.value[wordIndex]?.[letterIndex] ?? ''
-      if (!input) return 'empty'
-      return normalizeLetter(input) === normalizeLetter(letter) ? 'correct' : 'incorrect'
-    })
+    getWordLetterStates(letters, inputs.value[wordIndex] ?? [])
   )
 )
 
 const isSolved = computed(() => {
   if (!wordLetters.value.length) return false
   return wordLetters.value.every((letters, wordIndex) =>
-    letters.every(
-      (letter, letterIndex) =>
-        normalizeLetter(inputs.value[wordIndex]?.[letterIndex] ?? '') ===
-        normalizeLetter(letter)
-    )
+    isWordSolved(letters, inputs.value[wordIndex] ?? [])
   )
 })
 
@@ -97,10 +86,43 @@ const resetInputs = () => {
   inputs.value = props.words.map((word) => splitWord(word).map(() => ''))
 }
 
+const isRowSolved = (wordIndex: number, rowInput = inputs.value[wordIndex] ?? []) => {
+  const letters = wordLetters.value[wordIndex]
+  if (!letters?.length) return false
+  return isWordSolved(letters, rowInput)
+}
+
+const findNextUnsolvedRowIndex = (wordIndex: number) => {
+  for (let nextIndex = wordIndex + 1; nextIndex < wordLetters.value.length; nextIndex += 1) {
+    if (!isRowSolved(nextIndex)) {
+      return nextIndex
+    }
+  }
+  return null
+}
+
+const focusNextUnsolvedRow = async (wordIndex: number) => {
+  if (props.disabled || props.finished) return
+
+  const nextRowIndex = findNextUnsolvedRowIndex(wordIndex)
+  if (nextRowIndex === null) return
+
+  await nextTick()
+  focusWordRow(nextRowIndex)
+}
+
 const updateWord = (wordIndex: number, next: string[]) => {
+  const wasSolved = isRowSolved(wordIndex)
+
   const updated = [...inputs.value]
   updated[wordIndex] = next
   inputs.value = updated
+
+  const isNowSolved = isRowSolved(wordIndex, next)
+  // Continue naturally to the next unsolved row once this row is completed.
+  if (!wasSolved && isNowSolved) {
+    void focusNextUnsolvedRow(wordIndex)
+  }
 }
 
 const setWordRowRef = (el: WordRowExpose | null, index: number) => {

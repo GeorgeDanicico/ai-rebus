@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-type LetterState = 'empty' | 'correct' | 'incorrect'
+import type { LetterState } from '../types/rebus'
 
 type LetterBoxExpose = {
   focus: () => void

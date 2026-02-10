@@ -36,7 +36,10 @@
         </div>
 
         <div class="rounded-3xl border border-slate-200/70 bg-white/70 p-6">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            v-if="canGenerate"
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div>
               <p class="text-base font-medium text-slate-900">
                 Ready to generate your rebus?
@@ -58,17 +61,22 @@
             </UButton>
           </div>
 
-          <div v-if="!isProfileLoading && !canGenerate" class="mt-4">
+          <div v-if="generationBlockedReason">
             <UAlert color="neutral" variant="soft">
               <template #description>
-                Unfortunately you can't generate a rebus right now. Token resets:
-                <span class="font-semibold text-slate-700">{{ timeRemaining }}</span>
-                <span class="ml-1 text-slate-500">(UTC 00:00)</span>
+                <template v-if="generationBlockedReason === 'no-tokens'">
+                  You can't generate a rebus right now. Tokens reset in:
+                  <span class="font-semibold text-slate-700">{{ timeRemaining }}</span>
+                  <span class="ml-1 text-slate-500">(UTC 00:00)</span>
+                </template>
+                <template v-else>
+                  You can't currently generate a rebus.
+                </template>
               </template>
             </UAlert>
           </div>
 
-          <div v-if="generated" class="mt-6">
+          <div v-if="canGenerate && generated" class="mt-6">
             <RebusGame
               :words="generated.words"
               :questions="generated.words_questions"
@@ -125,8 +133,17 @@ const { profile, isLoading: isProfileLoading, fetchProfile } = useProfile()
 const { generated, isGenerating, finished, generateRebus, markFinished } = useRebus()
 const { timeRemaining } = useUtcResetCountdown()
 
+const isAllowedToGenerate = computed(() => profile.value?.allowed === true)
 const tokensRemaining = computed(() => profile.value?.tokens ?? 0)
-const canGenerate = computed(() => tokensRemaining.value > 0)
+const canGenerate = computed(
+  () => isAllowedToGenerate.value && tokensRemaining.value > 0
+)
+const generationBlockedReason = computed<'no-tokens' | 'not-allowed' | null>(() => {
+  if (isProfileLoading.value) return null
+  if (!isAllowedToGenerate.value) return 'not-allowed'
+  if (tokensRemaining.value <= 0) return 'no-tokens'
+  return null
+})
 const isAdmin = computed(() => profile.value?.role === 'ADMIN')
 const isAccessGrantedOpen = ref(false)
 const isAcknowledgingAccess = ref(false)

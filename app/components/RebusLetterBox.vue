@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-type LetterState = 'empty' | 'correct' | 'incorrect'
+import type { LetterState } from '../types/rebus'
 
 const props = defineProps<{
   modelValue: string
