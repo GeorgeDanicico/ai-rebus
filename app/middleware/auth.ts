@@ -1,10 +1,11 @@
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware((to) => {
   const { user } = useAuth()
 
-  if (!user.value) {
-    return navigateTo('/')
+  if (to.path === '/' && user.value) {
+    return navigateTo('/rebus')
   }
-  if (user.value && to.path === '/') {
-    return abortNavigation();
+
+  if (to.path !== '/' && !user.value) {
+    return navigateTo('/')
   }
 })
