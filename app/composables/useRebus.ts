@@ -4,6 +4,7 @@ import { onMounted, ref, watch } from 'vue'
 export type RebusResult = {
   words: string[]
   words_questions: string[]
+  theme: string
 }
 
 export type UseRebus = {
@@ -32,8 +33,16 @@ export const useRebus = (): UseRebus => {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     try {
-      const parsed = JSON.parse(raw) as { generated: RebusResult | null; finished: boolean }
-      generated.value = parsed.generated ?? null
+      const parsed = JSON.parse(raw) as {
+        generated: (RebusResult & { theme?: string }) | null
+        finished: boolean
+      }
+      generated.value = parsed.generated
+        ? {
+            ...parsed.generated,
+            theme: parsed.generated.theme ?? '',
+          }
+        : null
       finished.value = Boolean(parsed.finished)
     } catch (error) {
       console.warn('Failed to restore rebus from storage', error)

@@ -6,44 +6,34 @@ import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 type RebusResponse = {
   words: string[]
   words_questions: string[]
+  theme: string
 }
 
-// const SYSTEM_PROMPT = `
-// You generate rebus puzzles for a word game.
-// Create a short list of concrete words (5–7) that can be turned into a visual rebus, based on a specific theme. The words should each be Romanian words between 5 and 7 letters and should not contain punctuation or diacritics.
-// Every word must be chosen so that the entire list can be arranged in a grid where the words make sense both horizontally and vertically (this is critical for the rebus). The minimium grid size will match the number of words, and letters should align properly to form valid Romanian words in both directions.
-// After the list of words, generate a simple question or clue in Romanian for each word. The clues should be in plain Romanian without diacritics, family-friendly and easy to understand.
-// Output the words one per line, followed by numbered Romanian questions corresponding to those words.
-// `;
+type RebusAiResponse = Omit<RebusResponse, 'theme'>
+
 const SYSTEM_PROMPT = `
 <prompt>
-  <role>You are an AI that generates rebus puzzles for a word game.</role>
+  <role>You are an AI that generates themed word-guessing rounds for a game.</role>
   
   <objective>
-    Create a short list of concrete words (5–7 total) that can be turned into a visual rebus,
-    based on a single specific theme.
+    Create a short list of concrete words (5-7 total) based on one specific theme.
   </objective>
   
   <constraints>
     <words>
       <description>
-        Each word must be a single Romanian word between 5 and 7 letters long,
-        no punctuation or diacritics.
+        Each word must be a single Romanian word between 5 and 7 letters long with no punctuation or diacritics.
       </description>
-      <critical>
-        <rule>
-          Every word must be chosen so the entire list can be arranged in a grid where
-          the words make sense both horizontally and vertically — this is essential because
-          it will be used to form a rebus puzzle.
-        </rule>
-      </critical>
     </words>
     
     <format>
-      <list>Output the selected words, one per line.</list>
+      <json>
+        Return a JSON object with:
+        - "words": string[] with exactly the chosen words
+        - "words_questions": string[] with one Romanian clue per word (same order and same length)
+      </json>
       <clues>
-        After the word list, generate simple question or clue in Romanian for each word.
-        Questions must be in Romanian without diacritics, family-friendly and easy.
+        Clues must be in Romanian without diacritics, family-friendly, and easy to understand.
       </clues>
     </format>
   </constraints>
@@ -138,11 +128,12 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<{ theme?: string }>(event).catch(() => ({}))
   const randomTheme = RANDOM_THEMES[Math.floor(Math.random() * RANDOM_THEMES.length)]
+  const selectedTheme = body.theme?.trim() || randomTheme
 
   const response = await openai.responses.create({
     model: 'gpt-4.1',
     instructions: SYSTEM_PROMPT,
-    input: `Generate one rebus with the theme: ${randomTheme}.`,
+    input: `Generate one themed word-guessing round with the theme: ${selectedTheme}.`,
     temperature: 0.2,
     text: {
       format: zodTextFormat(RebusResponseSchema, 'rebus_response')
@@ -158,7 +149,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const parsedResponse: RebusResponse = JSON.parse(response.output_text);
+  const parsedResponse: RebusAiResponse = JSON.parse(response.output_text);
   console.log(parsedResponse);
 
   try {
@@ -186,5 +177,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 409, statusMessage: 'Tokens were updated by another request.' })
   }
 
-  return parsedResponse;
+  return {
+    ...parsedResponse,
+    theme: selectedTheme,
+  } satisfies RebusResponse
 })
