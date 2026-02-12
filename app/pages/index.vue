@@ -14,13 +14,13 @@
             Rebus Lab
           </UBadge>
           <h1 class="text-4xl font-semibold text-slate-900 sm:text-5xl">
-            Decode the clue.
+            Guess the theme.
             <span class="bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 bg-clip-text text-transparent">
-              See the idea.
+              Solve each word.
             </span>
           </h1>
           <p class="max-w-2xl text-lg text-slate-600">
-            A rebus is a picture riddle. We use AI to generate clever rebuses so you can guess, share, and learn fast.
+            Rebus Lab is a theme-based word guessing game. We use AI to generate fresh words and clues so you can guess, share, and improve quickly.
           </p>
         </div>
 
@@ -88,8 +88,8 @@ const handleGoogleLogin = async () => {
 const features = [
   {
     kicker: 'Generate',
-    title: 'Fresh rebuses on demand',
-    description: 'Prompt a theme and get puzzles designed for quick guesses.',
+    title: 'Fresh themed rounds on demand',
+    description: 'Generate a theme and get words with clues built for quick guesses.',
   },
   {
     kicker: 'Guess',
@@ -98,12 +98,12 @@ const features = [
   },
   {
     kicker: 'Learn',
-    title: 'Build a visual memory',
-    description: 'Every rebus teaches a new way to connect ideas.',
+    title: 'Sharpen your word intuition',
+    description: 'Each round helps you spot patterns faster.',
   },
 ]
 
-const tags = ['AI generated rebuses', 'Shareable puzzles', 'Daily practice', 'Adaptive difficulty']
+const tags = ['Theme-based rounds', 'Word guessing game', 'Daily practice', 'Adaptive difficulty']
 </script>
 
 <style scoped>

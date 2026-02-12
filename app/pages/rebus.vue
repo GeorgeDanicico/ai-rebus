@@ -5,10 +5,10 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p class="text-xs uppercase tracking-[0.3em] text-slate-400">
-              Your Rebus
+              Your Round
             </p>
             <h1 class="mt-2 text-3xl font-semibold text-slate-900">
-              Decode the story in pictures
+              Guess the themed words
             </h1>
           </div>
           <div class="flex items-center gap-3">
@@ -42,10 +42,10 @@
           >
             <div>
               <p class="text-base font-medium text-slate-900">
-                Ready to generate your rebus?
+                Ready for a new themed round?
               </p>
               <p class="text-sm text-slate-500">
-                We’ll craft a fresh word set you can turn into a rebus puzzle.
+                We&rsquo;ll generate fresh theme-based words with clues for you to solve.
               </p>
             </div>
             <UButton
@@ -57,7 +57,7 @@
               :disabled="!canGenerate"
               @click="handleGenerate"
             >
-              Generate rebus
+              Generate round
             </UButton>
           </div>
 
@@ -65,12 +65,12 @@
             <UAlert color="neutral" variant="soft">
               <template #description>
                 <template v-if="generationBlockedReason === 'no-tokens'">
-                  You can't generate a rebus right now. Tokens reset in:
+                  You can&apos;t generate a new round right now. Tokens reset in:
                   <span class="font-semibold text-slate-700">{{ timeRemaining }}</span>
                   <span class="ml-1 text-slate-500">(UTC 00:00)</span>
                 </template>
                 <template v-else>
-                  You can't currently generate a rebus.
+                  You can&apos;t currently generate a new round.
                 </template>
               </template>
             </UAlert>
@@ -80,6 +80,7 @@
             <RebusGame
               :words="generated.words"
               :questions="generated.words_questions"
+              :theme="generated.theme"
               :disabled="isGenerating"
               :finished="finished"
               @regenerate="handleGenerate"
@@ -90,7 +91,7 @@
 
         <div class="flex flex-col gap-2 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <span>Signed in as {{ userLabel }}</span>
-          <span>Hint: Think about a familiar phrase.</span>
+          <span>Hint: Start from the theme and narrow down each guess.</span>
         </div>
       </div>
     </UCard>

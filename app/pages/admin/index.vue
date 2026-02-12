@@ -19,7 +19,7 @@
               Refresh
             </UButton>
             <UButton color="neutral" variant="ghost" class="rounded-full" @click="goBack">
-              Back to rebus
+              Back to game
             </UButton>
           </div>
         </div>

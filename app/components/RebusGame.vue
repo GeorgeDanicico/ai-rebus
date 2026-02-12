@@ -31,6 +31,7 @@
     <RebusCompleteDialog
       v-if="isDialogOpen"
       v-model:open="isDialogOpen"
+      :theme="theme"
       @regenerate="emit('regenerate')"
     />
   </div>
@@ -47,6 +48,7 @@ type WordRowExpose = {
 const props = defineProps<{
   words: string[]
   questions: string[]
+  theme: string
   disabled?: boolean
   finished?: boolean
 }>()
