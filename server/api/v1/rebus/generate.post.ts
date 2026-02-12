@@ -117,12 +117,16 @@ export default defineEventHandler(async (event) => {
  
   const { data: profile, error: profileError } = await client
     .from('profiles')
-    .select('tokens')
+    .select('tokens, allowed')
     .eq('id', userId)
     .maybeSingle()
 
   if (profileError) {
     throw createError({ statusCode: 500, statusMessage: 'Failed to load profile.' })
+  }
+
+  if (!profile?.allowed) {
+    throw createError({ statusCode: 403, statusMessage: 'Your account is awaiting admin approval.' })
   }
 
   const availableTokens = profile?.tokens ?? 0
