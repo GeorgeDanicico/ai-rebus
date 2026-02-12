@@ -1,6 +1,6 @@
-import OpenAI from "openai";
-import { zodTextFormat } from "openai/helpers/zod";
-import { z } from "zod";
+import OpenAI from 'openai'
+import { zodTextFormat } from 'openai/helpers/zod'
+import { z } from 'zod'
 import { serverSupabaseClient, serverSupabaseUser } from '#supabase/server'
 
 type RebusResponse = {
@@ -11,18 +11,21 @@ type RebusResponse = {
 
 type RebusAiResponse = Omit<RebusResponse, 'theme'>
 
+const DEFAULT_REBUS_MODEL = 'gpt-4.1'
+const MAX_OUTPUT_TOKENS = 220
+
 const SYSTEM_PROMPT = `
 <prompt>
   <role>You are an AI that generates themed word-guessing rounds for a game.</role>
   
   <objective>
-    Create a short list of concrete words (5-7 total) based on one specific theme.
+    Create a short list of concrete words (5-8 total) based on one specific theme.
   </objective>
   
   <constraints>
     <words>
       <description>
-        Each word must be a single Romanian word between 5 and 7 letters long with no punctuation or diacritics.
+        Each word must be a single ENGLISH word between 5 and 8 letters long.
       </description>
     </words>
     
@@ -30,10 +33,11 @@ const SYSTEM_PROMPT = `
       <json>
         Return a JSON object with:
         - "words": string[] with exactly the chosen words
-        - "words_questions": string[] with one Romanian clue per word (same order and same length)
+        - "words_questions": string[] with one ENGLISH clue per word (same order and same length)
+        - "theme": the theme the user selected.
       </json>
       <clues>
-        Clues must be in Romanian without diacritics, family-friendly, and easy to understand.
+        Clues must be in plain English, family-friendly, and easy to understand.
       </clues>
     </format>
   </constraints>
@@ -78,10 +82,28 @@ const RANDOM_THEMES = [
   'space aliens'
 ]
 
-const RebusResponseSchema = z.object({
-  words: z.array(z.string()),
-  words_questions: z.array(z.string()),
-})
+const RebusResponseSchema = z
+  .object({
+    words: z
+      .array(
+        z
+          .string()
+          .trim()
+      )
+      .min(5)
+      .max(7),
+    words_questions: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(5)
+          .max(200)
+          .regex(/^[\x20-\x7E]+$/, 'Each clue must be plain ASCII text without diacritics.')
+      )
+      .min(5)
+      .max(8),
+  });
 
 export default defineEventHandler(async (event) => {
   const client = await serverSupabaseClient(event)
@@ -92,11 +114,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Unauthorized' })
   }
 
-  const runtimeConfig = useRuntimeConfig();
-  const openaiApiKey = runtimeConfig.openaiApiKey as string | undefined;
-
-  // console.log(runtimeConfig);
-  // console.log(openaiApiKey);
+  const runtimeConfig = useRuntimeConfig()
+  const openaiApiKey = runtimeConfig.openaiApiKey as string | undefined
 
   if (!openaiApiKey) {
     throw createError({
@@ -124,40 +143,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'No tokens remaining.' })
   }
 
-  const openai = new OpenAI({ apiKey: openaiApiKey });
+  const openai = new OpenAI({ apiKey: openaiApiKey })
 
-  const body = await readBody<{ theme?: string }>(event).catch(() => ({}))
-  const randomTheme = RANDOM_THEMES[Math.floor(Math.random() * RANDOM_THEMES.length)]
-  const selectedTheme = body.theme?.trim() || randomTheme
+  const selectedTheme = RANDOM_THEMES[Math.floor(Math.random() * RANDOM_THEMES.length)]
 
-  const response = await openai.responses.create({
-    model: 'gpt-4.1',
+  const response = await openai.responses.parse({
+    model: DEFAULT_REBUS_MODEL,
     instructions: SYSTEM_PROMPT,
     input: `Generate one themed word-guessing round with the theme: ${selectedTheme}.`,
     temperature: 0.2,
+    max_output_tokens: MAX_OUTPUT_TOKENS,
     text: {
-      format: zodTextFormat(RebusResponseSchema, 'rebus_response')
+      format: zodTextFormat(RebusResponseSchema, 'rebus_response'),
     },
   })
 
-  console.log("AI Response: \n" + response.output_text);
-
-  if (!response || !response.output_text) {
+  const parsedResponse = response.output_parsed as RebusAiResponse | null
+  if (!parsedResponse) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'OpenAI response was empty.',
-    });
-  }
-
-  const parsedResponse: RebusAiResponse = JSON.parse(response.output_text);
-  console.log(parsedResponse);
-
-  try {
-
-  } catch (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to parse OpenAI response.',
+      statusMessage: 'OpenAI response did not match the expected schema.',
     })
   }
 
