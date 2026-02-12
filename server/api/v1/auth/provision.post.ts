@@ -4,8 +4,6 @@ export default defineEventHandler(async (event) => {
     const client = await serverSupabaseClient(event);
     const loggedUser = await serverSupabaseUser(event)
     
-    console.log(loggedUser?.sub);
-
     if (loggedUser?.sub === undefined || loggedUser?.sub === null || loggedUser?.sub === '') {
       return { ok: false };
     }
@@ -14,16 +12,15 @@ export default defineEventHandler(async (event) => {
               .select('*')
               .eq('id', loggedUser?.sub || '');
 
-    console.log('Data is: ', data);
+    const userName: string[] = loggedUser?.user_metadat?.name?.split(" ");
 
     if (!data || data.length === 0) {
-      console.log('Inserting data...');
       const { error } = await client.from('profiles')
       .insert({
         // TODO refactor this in the future
         id: loggedUser?.sub || '',
-        first_name: '',
-        last_name: '',
+        first_name: userName.at(0) || '',
+        last_name: userName.at(1) || '',
         tokens: 0,
         allowed: false,
         received_initial_approval_confirmation: false

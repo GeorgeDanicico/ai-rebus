@@ -1,10 +1,6 @@
 export default defineNuxtRouteMiddleware((to) => {
   const config = useRuntimeConfig()
-  const isMaintenance =
-    config.public.maintenanceMode === true || config.public.maintenanceMode === 'true';
-
-      console.log(isMaintenance);
-      console.log(config.public.maintenanceMode);
+  const isMaintenance = config.public.maintenanceMode === 'true';
 
   if (isMaintenance && to.path !== '/maintenance') {
     return navigateTo('/maintenance')
