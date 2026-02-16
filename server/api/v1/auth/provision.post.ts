@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
               .select('*')
               .eq('id', loggedUser?.sub || '');
 
-    const userName: string[] = loggedUser?.user_metadat?.name?.split(" ");
+    const userName: string[] = loggedUser?.user_metadata?.name?.split(" ");
 
     if (!data || data.length === 0) {
       const { error } = await client.from('profiles')
